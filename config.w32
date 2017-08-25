@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("linger_array_buffer", "for linger_array_buffer support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("linger_array_buffer", "enable linger_array_buffer support", "no");
+
+if (PHP_LINGER_ARRAY_BUFFER != "no") {
+	EXTENSION("linger_array_buffer", "linger_array_buffer.c");
+}
+
