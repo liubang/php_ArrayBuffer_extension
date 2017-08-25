@@ -1,4 +1,4 @@
-#  A simple ArrayBuffer implements for php.
+#  A simple ArrayBuffer implementation for php.
 
 
 ## Demo
