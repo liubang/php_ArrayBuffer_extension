@@ -16,11 +16,9 @@ var_dump($uint8);
 
 for ($i = 0; $i < 255; $i++) {
     $uint8[$i] = $i;
-
 }
 
 for ($i = 0; $i < 255; $i++) {
     echo $int32[$i], "\n";
-
 }
 ```
