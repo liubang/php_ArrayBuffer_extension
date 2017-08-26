@@ -366,7 +366,6 @@ size_t linger_buffer_view_get_bytes_per_element(buffer_view_object *intern)
 	}	
 }
 
-
 PHP_FUNCTION(linger_array_buffer_view_ctor)
 {
 	zval *buffer_zval;
