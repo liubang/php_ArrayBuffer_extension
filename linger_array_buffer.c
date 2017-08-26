@@ -340,8 +340,16 @@ PHP_METHOD(linger_ArrayBuffer, __construct)
 	memset(intern->buffer, 0, length);
 }
 
+PHP_METHOD(linger_ArrayBuffer, length)
+{
+	buffer_object *intern;	
+	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
+	RETURN_LONG(intern->length);
+}
+
 const zend_function_entry linger_array_buffer_methods[] = {
 	PHP_ME(linger_ArrayBuffer, __construct, arginfo_buffer_ctor, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+	PHP_ME(linger_ArrayBuffer, length, NULL, ZEND_ACC_PUBLIC)
 	PHP_FE_END	
 };
 

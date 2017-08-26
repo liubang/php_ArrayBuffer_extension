@@ -2,6 +2,7 @@
 
 $buffer = new linger\ArrayBuffer(256);
 var_dump($buffer);
+var_dump($buffer->length());
 
 $int32 = new linger\ArrayBufferView\Int32Array($buffer);
 var_dump($int32);
