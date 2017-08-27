@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 try {
 	$buffer = new linger\ArrayBuffer(256);
 	var_dump($buffer);
-	var_dump($buffer->length());
+//	var_dump($buffer->length());
 
 	$int32 = new linger\ArrayBufferView\Int32Array($buffer);
 	var_dump($int32);
@@ -15,8 +15,9 @@ try {
 	}
 
 	for ($i = 0; $i < 255; $i++) {
-    		echo $int32[$i], "\n";
+//    		echo $int32[$i], "\n";
 	}
+
 } catch (Exception $e) {
 	echo $e->getMessage(), "\n";
 	echo $e->getTraceAsString(), "\n";

@@ -374,6 +374,136 @@ size_t linger_buffer_view_get_bytes_per_element(buffer_view_object *intern)
 	}	
 }
 
+static long get_long_from_zval(zval *offset)
+{
+	if (Z_TYPE_P(offset) == IS_LONG) {
+		return Z_LVAL_P(offset);
+	} else {
+		zval tmp = *offset;
+		zval_copy_ctor(&tmp);
+		convert_to_long(&tmp);
+		return Z_LVAL(tmp);
+	}
+}
+
+static zval *linger_array_buffer_view_read_dimension(zval *object, zval *zv_offset, int type TSRMLS_DC)
+{
+	buffer_view_object *intern = zend_object_store_get_object(object TSRMLS_CC);
+	zval *retval;
+	long offset;
+
+	if (intern->std.ce->parent) {
+		return zend_get_std_object_handlers()->read_dimension(object, zv_offset, type TSRMLS_CC);
+	}
+	
+	if (!zv_offset) {
+		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
+		return NULL;
+	}
+
+	offset = get_long_from_zval(zv_offset);
+	if (offset < 0 || offset >= intern->length) {
+		zend_throw_exception(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
+		return NULL;
+	}
+
+	retval = linger_buffer_view_offset_get(intern, offset);
+	Z_DELREF_P(retval);
+	return retval;
+}
+
+static void linger_array_buffer_view_write_dimension(zval *object, zval *zv_offset, zval *value TSRMLS_DC)
+{
+	buffer_view_object *intern;
+	long offset;
+	intern = zend_object_store_get_object(object TSRMLS_CC);
+	
+	if (intern->std.ce->parent) {
+		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
+	}
+
+	if (!zv_offset) {
+		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
+		return;
+	}
+
+	offset = get_long_from_zval(zv_offset);
+	if (offset < 0 || offset > intern->length) {
+		zend_throw_excpetion(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
+		return;
+	}
+
+	linger_buffer_view_offset_set(intern, offset, value);
+}
+
+static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,  int check_empty TSRMLS_DC)
+{
+	buffer_view_object *intern;
+	long offset;
+	intern = zend_object_store_get_object(object TSRMLS_CC);
+	
+	if (intern->std.ce->parent) {
+		return zend_get_std_object_handlers()->has_dimension(object, zv_offset, check_empty TSRMLS_CC);
+	}
+
+	if (!zv_offset) {
+		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
+		return 0;
+	}
+
+	offset = get_long_from_zval(zv_offset);
+	if (offset < 0 || offset > intern->length) {
+		return 0;
+	}
+
+	if (check_empty) {
+		int retval;
+		zval *value = linger_buffer_view_offset_get(intern, offset);
+		retval = zend_is_true(value);
+		zval_ptr_dtor(&value);
+		return retval;
+	}
+
+	return 1;
+}
+
+static void linger_array_buffer_view_unset_dimension(zval *object, zval *zv_offset TSRMLS_DC)
+{
+	zend_throw_exception(NULL, "Cannot unset offsets in a typed array", 0 TSRMLS_CC);
+}
+
+static int linger_array_buffer_view_compare_objects(zval *obj1, zval *obj2 TSRMLS_DC)
+{
+	buffer_view_object *intern1 = zend_object_store_get_object(obj1 TSRMLS_CC);
+	buffer_view_object *intern2 = zend_object_store_get_object(obj2 TSRMLS_CC);
+
+	if (memcmp(intern1, intern2, sizeof(buffer_view_object)) == 0) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+static HashTable *linger_array_buffer_view_get_debug_info(zval *obj, int *is_temp TSRMLS_DC) 
+{
+	buffer_view_object *intern = zend_object_store_get_object(obj TSRMLS_CC);
+	HashTable *properties = Z_OBJPROP_P(obj);
+	HashTable *ht;
+	int i;
+
+	ALLOC_HASHTABLE(ht);
+	ZEND_INIT_SYMTABLE_EX(ht, intern->length + zend_hash_num_elements(properties), 0);
+	zend_hash_copy(ht, properties, (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval *));
+
+	*is_temp = 1;
+	for (i = 0; i < intern->length; i++) {
+		zval *value = linger_buffer_view_offset_get(intern, i);
+		zend_hash_index_update(ht, i, (void *) &value, sizeof(zval *), NULL);
+	}
+
+	return ht;
+}
+
 PHP_FUNCTION(linger_array_buffer_view_ctor)
 {
 	zval *buffer_zval;
@@ -425,85 +555,11 @@ PHP_FUNCTION(linger_array_buffer_view_ctor)
 	view_intern->buf.as_int8 += offset;
 }
 
-PHP_FUNCTION(linger_array_buffer_view_offset_get)
-{
-	buffer_view_object *intern;
-	long offset;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &offset) == FAILURE) {
-		return;
-	}
-
-	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
-	if (offset < 0 || offset >= intern->length) {
-		zend_throw_exception(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
-		return;
-	}
-
-	zval *retval;
-	retval = linger_buffer_view_offset_get(intern, offset);
-	RETURN_ZVAL(retval, 1, 1);
-}
-
-PHP_FUNCTION(linger_array_buffer_view_offset_set)
-{
-	buffer_view_object *intern;
-	long offset;
-	zval *value;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lz", &offset, &value) == FAILURE) {
-		return;
-	}
-	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
-	if (offset < 0 || offset >= intern->length) {
-		zend_throw_exception(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
-		return;
-	}
-	linger_buffer_view_offset_set(intern, offset, value);
-
-	RETURN_TRUE;
-}
-
-PHP_FUNCTION(linger_array_buffer_view_offset_exists)
-{
-	buffer_view_object *intern;
-	long offset;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &offset) == FAILURE) {
-		return;
-	}
-	
-	if (offset < 0) {
-		zend_throw_exception(NULL, "Offset must be non-negative", 0 TSRMLS_CC);
-		return;
-	}
-	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
-	if (offset >= intern->length) {
-		RETURN_FALSE;
-	} else {
-		RETURN_TRUE;
-	}
-}
-
-PHP_FUNCTION(linger_array_buffer_view_offset_unset)
-{
-	buffer_view_object *intern;
-	long offset;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &offset) == FAILURE) {
-		return;
-	}
-	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
-	zval *zero;
-	MAKE_STD_ZVAL(zero);
-	ZVAL_LONG(zero, 0);
-	linger_buffer_view_offset_set(intern, offset, zero);
-}
-
 const zend_function_entry linger_array_buffer_view_methods[] = {
 	PHP_ME_MAPPING(__construct, linger_array_buffer_view_ctor, arginfo_buffer_view_ctor, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-	PHP_ME_MAPPING(offsetGet, linger_array_buffer_view_offset_get, arginfo_buffer_view_offset, ZEND_ACC_PUBLIC)
-	PHP_ME_MAPPING(offsetSet, linger_array_buffer_view_offset_set, arginfo_buffer_view_offset_set, ZEND_ACC_PUBLIC)
-	PHP_ME_MAPPING(offsetExists, linger_array_buffer_view_offset_exists, arginfo_buffer_view_offset, ZEND_ACC_PUBLIC)
-	PHP_ME_MAPPING(offsetUnset, linger_array_buffer_view_offset_unset, arginfo_buffer_view_offset, ZEND_ACC_PUBLIC)
 	PHP_FE_END
 };
+
 
 PHP_MINIT_FUNCTION(linger_array_buffer)
 {
@@ -516,10 +572,9 @@ PHP_MINIT_FUNCTION(linger_array_buffer)
 
 #define REGISTER_ARRAY_BUFFER_VIEW_CLASS(class_name, type)		                 \
 	do {														                 \
-		INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);     \
+		INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);	 \
 		type##_array_ce = zend_register_internal_class(&ce TSRMLS_CC);           \
 		type##_array_ce->create_object = linger_array_buffer_view_create_object; \
-		zend_class_implements(type##_array_ce TSRMLS_CC, 1, zend_ce_arrayaccess);\
 	} while (0)
 
 	REGISTER_ARRAY_BUFFER_VIEW_CLASS(Linger\\ArrayBufferView\\Int8Array, int8);
@@ -533,6 +588,12 @@ PHP_MINIT_FUNCTION(linger_array_buffer)
 
 	memcpy(&linger_array_buffer_view_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	linger_array_buffer_view_handlers.clone_obj = linger_array_buffer_view_clone;
+	linger_array_buffer_view_handlers.read_dimension = linger_array_buffer_view_read_dimension;
+	linger_array_buffer_view_handlers.write_dimension = linger_array_buffer_view_write_dimension;
+	linger_array_buffer_view_handlers.has_dimension = linger_array_buffer_view_has_dimension;
+	linger_array_buffer_view_handlers.unset_dimension = linger_array_buffer_view_unset_dimension;
+	linger_array_buffer_view_handlers.compare_objects = linger_array_buffer_view_compare_objects;
+	linger_array_buffer_view_handlers.get_debug_info = linger_array_buffer_view_get_debug_info;
 	return SUCCESS;
 }
 
