@@ -446,11 +446,6 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 		return zend_get_std_object_handlers()->has_dimension(object, zv_offset, check_empty TSRMLS_CC);
 	}
 
-	if (!zv_offset) {
-		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
-		return 0;
-	}
-
 	offset = get_long_from_zval(zv_offset);
 	if (offset < 0 || offset > intern->length) {
 		return 0;
@@ -469,6 +464,9 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 
 static void linger_array_buffer_view_unset_dimension(zval *object, zval *zv_offset TSRMLS_DC)
 {
+	if (intern->std.ce->parent) {
+		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
+	}
 	zend_throw_exception(NULL, "Cannot unset offsets in a typed array", 0 TSRMLS_CC);
 }
 
