@@ -402,7 +402,7 @@ PHP_FUNCTION(linger_array_buffer_view_ctor)
 		return;
 	}
 	if (length < 0) {
-		zend_throw_excpetion(NULL, "Length must be positive or zero", 0 TSRMLS_CC);
+		zend_throw_exception(NULL, "Length must be positive or zero", 0 TSRMLS_CC);
 		return;
 	}
 	view_intern->offset = offset;
@@ -454,7 +454,7 @@ PHP_FUNCTION(linger_array_buffer_view_offset_set)
 	}
 	intern = zend_object_store_get_object(getThis() TSRMLS_CC);
 	if (offset < 0 || offset >= intern->length) {
-		zend_throw_excpetion(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
+		zend_throw_exception(NULL, "Offset is outside the buffer range", 0 TSRMLS_CC);
 		return;
 	}
 	linger_buffer_view_offset_set(intern, offset, value);
