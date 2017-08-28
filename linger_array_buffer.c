@@ -464,8 +464,9 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 
 static void linger_array_buffer_view_unset_dimension(zval *object, zval *zv_offset TSRMLS_DC)
 {
+	buffer_view_object *intern = zend_object_store_get_object(object TSRMLS_CC);
 	if (intern->std.ce->parent) {
-		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
+		return zend_get_std_object_handlers()->unset_dimension(object, zv_offset TSRMLS_CC);
 	}
 	zend_throw_exception(NULL, "Cannot unset offsets in a typed array", 0 TSRMLS_CC);
 }
