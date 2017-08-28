@@ -640,8 +640,8 @@ PHP_MINIT_FUNCTION(linger_array_buffer)
 	memcpy(&linger_array_buffer_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	linger_array_buffer_handlers.clone_obj = linger_array_buffer_clone;
 
-#define REGISTER_ARRAY_BUFFER_VIEW_CLASS(class_name, type)		                 \
-	do {														                 \
+#define REGISTER_ARRAY_BUFFER_VIEW_CLASS(class_name, type)						 \
+	do {																		 \
 		INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);	 \
 		type##_array_ce = zend_register_internal_class(&ce TSRMLS_CC);           \
 		type##_array_ce->create_object = linger_array_buffer_view_create_object; \
@@ -713,11 +713,3 @@ zend_module_entry linger_array_buffer_module_entry = {
 ZEND_GET_MODULE(linger_array_buffer)
 #endif
 
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
- */
