@@ -18,7 +18,6 @@ try {
     foreach ($int32 as $k => $v) {
         echo $k, "==>", $v, "\n";
     }
-
 } catch (Exception $e) {
 	echo $e->getMessage(), "\n";
 	echo $e->getTraceAsString(), "\n";
