@@ -34,6 +34,7 @@
 #include "php_linger_array_buffer.h"
 
 extern *zend_ce_arrayaccess;
+extern *zend_ce_traversable;
 
 #define linger_efree(p)		if(p) efree(p)
 
@@ -73,6 +74,14 @@ typedef struct _buffer_view_object {
 	size_t length;
 	buffer_view_type type;
 } buffer_view_object;
+
+typedef struct _buffer_view_iterator {
+	zend_object_iterator intern;
+	buffer_view_object *view;
+	size_t offset;
+	zval *current;
+} buffer_view_iterator;
+
 
 /* ArrayBuffer class entry and handlers */
 zend_class_entry *linger_array_buffer_ce;
@@ -392,10 +401,6 @@ static zval *linger_array_buffer_view_read_dimension(zval *object, zval *zv_offs
 	zval *retval;
 	long offset;
 
-//	if (intern->std.ce->parent) {
-//		return zend_get_std_object_handlers()->read_dimension(object, zv_offset, type TSRMLS_CC);
-//	}
-	
 	if (!zv_offset) {
 		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
 		return NULL;
@@ -418,10 +423,6 @@ static void linger_array_buffer_view_write_dimension(zval *object, zval *zv_offs
 	long offset;
 	intern = zend_object_store_get_object(object TSRMLS_CC);
 	
-//	if (intern->std.ce->parent) {
-//		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
-//	}
-
 	if (!zv_offset) {
 		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
 		return;
@@ -442,10 +443,6 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 	long offset;
 	intern = zend_object_store_get_object(object TSRMLS_CC);
 	
-//	if (intern->std.ce->parent) {
-//		return zend_get_std_object_handlers()->has_dimension(object, zv_offset, check_empty TSRMLS_CC);
-//	}
-
 	offset = get_long_from_zval(zv_offset);
 	if (offset < 0 || offset > intern->length) {
 		return 0;
@@ -464,10 +461,6 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 
 static void linger_array_buffer_view_unset_dimension(zval *object, zval *zv_offset TSRMLS_DC)
 {
-//	buffer_view_object *intern = zend_object_store_get_object(object TSRMLS_CC);
-//	if (intern->std.ce->parent) {
-//		return zend_get_std_object_handlers()->unset_dimension(object, zv_offset TSRMLS_CC);
-//	}
 	zend_throw_exception(NULL, "Cannot unset offsets in a typed array", 0 TSRMLS_CC);
 }
 
@@ -560,6 +553,84 @@ const zend_function_entry linger_array_buffer_view_methods[] = {
 };
 
 
+static void linger_buffer_view_iterator_dtor(zend_object_iterator *intern TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *) intern;
+	if (iterator->current) {
+		zval_ptr_dtor(&iterator->current);	
+	}
+	zval_ptr_dtor((zval **) &intern->data);
+	efree(iterator);
+}
+
+static int linger_buffer_view_iterator_valid(zend_object_iterator *intern TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *)intern;
+	return iterator->offset < iterator->view->length ? SUCCESS : FAILURE;
+}
+
+static void linger_buffer_view_iterator_get_current_data(zend_object_iterator *intern, zval ***data TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *)intern;
+	if (iterator->current) {
+		zval_ptr_dtor(&iterator->current);
+	}
+	
+	if (iterator->offset < iterator->view->length) {
+		iterator->current = linger_buffer_view_offset_get(iterator->view, iterator->offset);
+		*data = &iterator->current;
+	} else {
+		*data = NULL;
+	}
+}
+
+static void linger_buffer_view_iterator_get_current_key(zend_object_iterator *intern, zval *key TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *)intern;
+	ZVAL_LONG(key, iterator->offset);
+}
+
+static void linger_buffer_view_iterator_move_forward(zend_object_iterator *intern TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *)intern;
+	iterator->offset++;
+}
+
+static void linger_buffer_view_iterator_rewind(zend_object_iterator *intern TSRMLS_DC)
+{
+	buffer_view_iterator *iterator = (buffer_view_iterator *) iterator;
+	iterator->offset = 0;
+	iterator->current = NULL;
+}
+
+
+static zend_object_iterator_funcs linger_buffer_view_iterator_funcs = {
+	linger_buffer_view_iterator_dtor,
+	linger_buffer_view_iterator_valid,
+	linger_buffer_view_iterator_get_current_data,
+	linger_buffer_view_iterator_get_current_key,
+	linger_buffer_view_iterator_move_forward,
+	linger_buffer_view_iterator_rewind
+};
+
+zend_object_iterator *linger_buffer_view_get_iterator(zend_class_entry *ce, zval *object, int by_ref TSRMLS_DC)
+{
+	buffer_view_iterator *iterator;
+	if (by_ref) {
+		zend_throw_exception(NULL, "Cannot interate buffer view by refererce", 0 TSRMLS_CC);
+		return NULL;
+	}
+	iterator = emalloc(sizeof(buffer_view_iterator));
+	iterator->intern.funcs = &linger_buffer_view_iterator_funcs;
+	iterator->intern.data = object;
+	Z_ADDREF_P(object);
+
+	iterator->view = zend_object_store_get_object(object TSRMLS_CC);
+	iterator->offset = 0;
+	iterator->current = NULL;
+	return (zend_object_iterator *) iterator;
+}
+
 PHP_MINIT_FUNCTION(linger_array_buffer)
 {
 	zend_class_entry ce;
@@ -574,6 +645,9 @@ PHP_MINIT_FUNCTION(linger_array_buffer)
 		INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);	 \
 		type##_array_ce = zend_register_internal_class(&ce TSRMLS_CC);           \
 		type##_array_ce->create_object = linger_array_buffer_view_create_object; \
+		type##_array_ce->get_iterator = linger_buffer_view_get_iterator;		 \
+		type##_array_ce->iterator_funcs.funcs = &linger_buffer_view_iterator_funcs; \
+		zend_class_implements(type##_array_ce TSRMLS_CC, 1, zend_ce_traversable); \
 	} while (0)
 
 	REGISTER_ARRAY_BUFFER_VIEW_CLASS(Linger\\ArrayBufferView\\Int8Array, int8);
