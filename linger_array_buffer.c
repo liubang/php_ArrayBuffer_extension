@@ -392,9 +392,9 @@ static zval *linger_array_buffer_view_read_dimension(zval *object, zval *zv_offs
 	zval *retval;
 	long offset;
 
-	if (intern->std.ce->parent) {
-		return zend_get_std_object_handlers()->read_dimension(object, zv_offset, type TSRMLS_CC);
-	}
+//	if (intern->std.ce->parent) {
+//		return zend_get_std_object_handlers()->read_dimension(object, zv_offset, type TSRMLS_CC);
+//	}
 	
 	if (!zv_offset) {
 		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
@@ -418,9 +418,9 @@ static void linger_array_buffer_view_write_dimension(zval *object, zval *zv_offs
 	long offset;
 	intern = zend_object_store_get_object(object TSRMLS_CC);
 	
-	if (intern->std.ce->parent) {
-		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
-	}
+//	if (intern->std.ce->parent) {
+//		return zend_get_std_object_handlers()->write_dimension(object, zv_offset, value TSRMLS_CC);
+//	}
 
 	if (!zv_offset) {
 		zend_throw_exception(NULL, "Cannot append to a typed array", 0 TSRMLS_CC);
@@ -442,9 +442,9 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 	long offset;
 	intern = zend_object_store_get_object(object TSRMLS_CC);
 	
-	if (intern->std.ce->parent) {
-		return zend_get_std_object_handlers()->has_dimension(object, zv_offset, check_empty TSRMLS_CC);
-	}
+//	if (intern->std.ce->parent) {
+//		return zend_get_std_object_handlers()->has_dimension(object, zv_offset, check_empty TSRMLS_CC);
+//	}
 
 	offset = get_long_from_zval(zv_offset);
 	if (offset < 0 || offset > intern->length) {
@@ -464,10 +464,10 @@ static int linger_array_buffer_view_has_dimension(zval *object, zval *zv_offset,
 
 static void linger_array_buffer_view_unset_dimension(zval *object, zval *zv_offset TSRMLS_DC)
 {
-	buffer_view_object *intern = zend_object_store_get_object(object TSRMLS_CC);
-	if (intern->std.ce->parent) {
-		return zend_get_std_object_handlers()->unset_dimension(object, zv_offset TSRMLS_CC);
-	}
+//	buffer_view_object *intern = zend_object_store_get_object(object TSRMLS_CC);
+//	if (intern->std.ce->parent) {
+//		return zend_get_std_object_handlers()->unset_dimension(object, zv_offset TSRMLS_CC);
+//	}
 	zend_throw_exception(NULL, "Cannot unset offsets in a typed array", 0 TSRMLS_CC);
 }
 
