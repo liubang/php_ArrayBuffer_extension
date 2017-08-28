@@ -15,10 +15,9 @@ try {
 	}
 	var_dump($uint8);
 
-	for ($i = 0; $i < 255; $i++) {
-//    		echo $int32[$i], "\n";
-	}
-
+    foreach ($int32 as $k => $v) {
+        echo $k, "==>", $v, "\n";
+    }
 } catch (Exception $e) {
 	echo $e->getMessage(), "\n";
 	echo $e->getTraceAsString(), "\n";
