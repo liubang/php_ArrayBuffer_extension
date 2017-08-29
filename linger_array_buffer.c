@@ -33,8 +33,8 @@
 #include "ext/standard/info.h"
 #include "php_linger_array_buffer.h"
 
-extern *zend_ce_arrayaccess;
-extern *zend_ce_traversable;
+extern zend_class_entry *zend_ce_arrayaccess;
+extern zend_class_entry *zend_ce_traversable;
 
 #define linger_efree(p)		if(p) efree(p)
 
