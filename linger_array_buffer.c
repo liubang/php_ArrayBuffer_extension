@@ -560,7 +560,7 @@ static void linger_buffer_view_iterator_dtor(zend_object_iterator *intern TSRMLS
         zval_ptr_dtor(&iterator->current);
     }
     zval_ptr_dtor((zval **) &intern->data);
-    efree(iterator);
+    linger_efree(iterator);
 }
 
 static int linger_buffer_view_iterator_valid(zend_object_iterator *intern TSRMLS_DC)
