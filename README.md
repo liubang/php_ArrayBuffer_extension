@@ -1,5 +1,9 @@
 #  A simple ArrayBuffer implementation for php.
 
+## Feature
+
+- ArrayAccess
+- Traversable
 
 ## Demo
 
