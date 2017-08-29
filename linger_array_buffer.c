@@ -598,7 +598,7 @@ static void linger_buffer_view_iterator_move_forward(zend_object_iterator *inter
 
 static void linger_buffer_view_iterator_rewind(zend_object_iterator *intern TSRMLS_DC)
 {
-    buffer_view_iterator *iterator = (buffer_view_iterator *) iterator;
+    buffer_view_iterator *iterator = (buffer_view_iterator *) intern;
     iterator->offset = 0;
     iterator->current = NULL;
 }
