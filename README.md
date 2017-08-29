@@ -1,5 +1,9 @@
 #  A simple ArrayBuffer implementation for php.
 
+## About ArrayBuffer
+
+@see [http://www.javascripture.com/ArrayBuffer](http://www.javascripture.com/ArrayBuffer)
+
 ## Feature
 
 - ArrayAccess
