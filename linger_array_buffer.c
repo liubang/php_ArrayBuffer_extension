@@ -36,7 +36,7 @@
 extern zend_class_entry *zend_ce_arrayaccess;
 extern zend_class_entry *zend_ce_traversable;
 
-#define linger_efree(p)		if(p) efree(p)
+#define linger_efree(p)     if(p) efree(p)
 
 static int le_linger_array_buffer;
 
@@ -640,15 +640,15 @@ PHP_MINIT_FUNCTION(linger_array_buffer)
     memcpy(&linger_array_buffer_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
     linger_array_buffer_handlers.clone_obj = linger_array_buffer_clone;
 
-#define REGISTER_ARRAY_BUFFER_VIEW_CLASS(class_name, type)						 \
-	do {																		 \
-		INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);	 \
-		type##_array_ce = zend_register_internal_class(&ce TSRMLS_CC);           \
-		type##_array_ce->create_object = linger_array_buffer_view_create_object; \
-		type##_array_ce->get_iterator = linger_buffer_view_get_iterator;		 \
-		type##_array_ce->iterator_funcs.funcs = &linger_buffer_view_iterator_funcs; \
-		zend_class_implements(type##_array_ce TSRMLS_CC, 1, zend_ce_traversable); \
-	} while (0)
+#define REGISTER_ARRAY_BUFFER_VIEW_CLASS(class_name, type)                       \
+    do {                                                                         \
+        INIT_CLASS_ENTRY(ce, #class_name, linger_array_buffer_view_methods);     \
+        type##_array_ce = zend_register_internal_class(&ce TSRMLS_CC);           \
+        type##_array_ce->create_object = linger_array_buffer_view_create_object; \
+        type##_array_ce->get_iterator = linger_buffer_view_get_iterator;         \
+        type##_array_ce->iterator_funcs.funcs = &linger_buffer_view_iterator_funcs; \
+        zend_class_implements(type##_array_ce TSRMLS_CC, 1, zend_ce_traversable); \
+    } while (0)
 
     REGISTER_ARRAY_BUFFER_VIEW_CLASS(Linger\\ArrayBufferView\\Int8Array, int8);
     REGISTER_ARRAY_BUFFER_VIEW_CLASS(Linger\\ArrayBufferView\\UInt8Array, uint8);
