@@ -104,6 +104,7 @@ static void linger_array_buffer_free_object_storage(buffer_object *intern TSRMLS
     linger_efree(intern->buffer);
 }
 
+#if PHP_MAJOR_VERSION >= 5 && PHP_MAJOR_VERSION < 7
 zend_object_value linger_array_buffer_create_object(zend_class_entry *class_type TSRMLS_DC)
 {
     zend_object_value retval;
@@ -124,6 +125,12 @@ zend_object_value linger_array_buffer_create_object(zend_class_entry *class_type
     retval.handlers = &linger_array_buffer_handlers;
     return retval;
 }
+#else if PHP_MAJOR_VERSION >= 7
+zend_object * linger_array_buffer_create_object(zend_class_entry *class_type) 
+{
+    buffer_object *internal = ecalloc(1, sizeof(buffer_object) + zend_object_properties_size(class_type));
+}
+#endif
 
 static zend_object_value linger_array_buffer_clone(zval *object TSRMLS_DC)
 {
